@@ -1,0 +1,6 @@
+[Server]
+hostname = "localhost"
+port = 25566
+
+[Proxy]
+port = 25565
