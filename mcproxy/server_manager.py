@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime
 import io
 from typing import Literal
-from mcproxy import server_controls
+import server_controls
 import protocol
 import socket
 from async_socket import AsyncSocket as Socket
