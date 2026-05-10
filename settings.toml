@@ -1,6 +1,9 @@
 [Server]
 hostname = "localhost"
-port = 25566
+port = 25567
 
 [Proxy]
 port = 25565
+
+[AWS]
+instance-id = ""

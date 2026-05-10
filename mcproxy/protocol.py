@@ -1,35 +1,27 @@
 import asyncio
-import socket
+from async_socket import AsyncSocket as Socket
 
 SEGMENT_BITS = 0x7F
 CONTINUE_BIT = 0x80
 
 class SocketBuffer:
-    def __init__(self, socket: socket.socket):
+    def __init__(self, socket: Socket):
         self.socket = socket
         self.buffer = b''
         self.position = 0
     
-    def read_byte(self) -> int:
+    async def read_byte(self) -> int:
         if self.position >= len(self.buffer):
             self.position = 0
-            self.buffer = self.socket.recv(8162)
-            print(self.buffer)
+            self.buffer = await self.socket.recv(8162)
+            
             if not self.buffer:
                 raise ConnectionAbortedError
         
         byte = self.buffer[self.position]
         self.position += 1
-        return byte
 
-async def read_byte(buffer: SocketBuffer):
-    while True:
-        try:
-            return buffer.read_byte()
-        except BlockingIOError:
-            pass
-        
-        await asyncio.sleep(0)
+        return byte
 
 async def read_var_int(buffer: SocketBuffer) -> int:
     value = 0
@@ -37,7 +29,7 @@ async def read_var_int(buffer: SocketBuffer) -> int:
     currentByte = None
 
     while True:
-        currentByte = await read_byte(buffer)
+        currentByte = await buffer.read_byte()
         value |= (currentByte & SEGMENT_BITS) << position
 
         if (currentByte & CONTINUE_BIT) == 0:
@@ -51,7 +43,10 @@ async def read_var_int(buffer: SocketBuffer) -> int:
 
     return value
 
-def write_var_int(value: int, buffer):
+class WritableBuffer:
+    def write_byte(byte: int): ...
+
+def write_var_int(value: int, buffer: WritableBuffer):
     while True:
         if (value & ~SEGMENT_BITS) == 0:
             buffer.write_byte(value)
@@ -67,12 +62,13 @@ class ByteBuffer:
         self.buffer = bytes
         self.position = 0
     
-    def read_byte(self) -> int:
+    async def read_byte(self) -> int:
         if self.position >= len(self.buffer):
             raise OverflowError("No bytes left in buffer.")
         
         byte = self.buffer[self.position]
         self.position += 1
+
         return byte
     
     def has_bytes(self) -> bool:
@@ -120,7 +116,7 @@ async def read_message(buffer: SocketBuffer) -> Message:
 
     data = b''
     while len(data) < length:
-        data += (await read_byte(buffer)).to_bytes(1, 'big')
+        data += (await buffer.read_byte()).to_bytes(1, 'big')
 
     message_buffer = ByteBuffer(data)
 
@@ -128,6 +124,6 @@ async def read_message(buffer: SocketBuffer) -> Message:
 
     data = b''
     while message_buffer.has_bytes():
-        data += message_buffer.read_byte().to_bytes(1, 'big')
+        data += (await message_buffer.read_byte()).to_bytes(1, 'big')
     
     return Message(length, packet_id, data)

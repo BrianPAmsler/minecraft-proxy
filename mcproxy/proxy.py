@@ -1,12 +1,9 @@
-import json
 from async_socket import AsyncSocket as Socket
 import socket
 import asyncio
-import tomllib
-from contextlib import suppress
 
 import jsonpickle
-import protocol
+from settings import SERVER_HOSTNAME, SERVER_PORT, PROXY_PORT
 import server_manager
 
 # from sys import exit
@@ -21,26 +18,12 @@ import server_manager
 
 # exit(0)
 
-SERVER_HOSTNAME = 'localhost'
-SERVER_PORT = 25566
-PROXY_PORT = 25565
-
 # raw_msg = b'\x00\x21{"text": "Server is starting..."}'
 # print(len(raw_msg))
 
 SERVER_STARTING_MESSAGE = b'\x23\x00\x21{"text": "Server is starting..."}'
 # print(error_message)
 # print(len(error_message))
-
-starting = False
-
-with open("settings.toml", 'rb') as file:
-    settings = tomllib.load(file)
-
-    with suppress(KeyError):
-        SERVER_HOSTNAME = settings['Server']['hostname']
-        SERVER_PORT = settings['Server']['port']
-        PROXY_PORT = settings['Proxy']['port']
 
 async def server_connection(server: Socket, client: Socket, address):
     print(f"[{address}] - Server connection established.")
@@ -64,8 +47,8 @@ async def server_connection(server: Socket, client: Socket, address):
 async def client_connection(client: Socket, address):
     print(f"[{address}] - Connected.")
 
-    # buffer = mcprotocol.SocketBuffer(client)
-    # handshake = await mcprotocol.read_handshake(buffer)
+    # buffer = protocol.SocketBuffer(client)
+    # handshake = await protocol.read_handshake(buffer)
 
     # print(handshake.__dict__)
 
@@ -103,11 +86,11 @@ async def client_connection(client: Socket, address):
     print(f"[{address}] - Disconnected.")
 
 async def main():
-    # status = await server_manager.server_status(SERVER_HOSTNAME, SERVER_PORT)
+    status = await server_manager.server_status(SERVER_HOSTNAME, SERVER_PORT)
 
-    # print(jsonpickle.dumps(status, unpicklable=False))
+    print(jsonpickle.dumps(status, unpicklable=False))
 
-    # return
+    return
     print("Starting proxy server...")
     proxy = Socket(socket.AF_INET6, socket.SOCK_STREAM)
     await proxy.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
