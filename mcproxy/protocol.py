@@ -4,6 +4,8 @@ from async_socket import AsyncSocket as Socket
 SEGMENT_BITS = 0x7F
 CONTINUE_BIT = 0x80
 
+PROTOCOL_VERSION = 765
+
 class SocketBuffer:
     def __init__(self, socket: Socket):
         self.socket = socket
@@ -74,6 +76,13 @@ class ByteBuffer:
     def has_bytes(self) -> bool:
         return self.position < len(self.buffer)
 
+class ByteWriteBuffer:
+    def __init__(self):
+        self.buffer = b''
+
+    def write_byte(self, byte: int):
+        self.buffer += byte.to_bytes(1, 'big')
+
 class Handshake:
     def __init__(self, version: int, address: str, port: int, intent: int):
         self.version = version
@@ -94,11 +103,11 @@ async def read_handshake(buffer: SocketBuffer) -> Handshake:
     length = await read_var_int(buffer)
     address = b''
     while len(address) < length:
-        address += buffer.read_byte().to_bytes(1, 'big')
+        address += (await buffer.read_byte()).to_bytes(1, 'big')
     address = address.decode('utf-8')
 
-    port_high = buffer.read_byte()
-    port_low = buffer.read_byte()
+    port_high = await buffer.read_byte()
+    port_low = await buffer.read_byte()
     port = port_high << 8 | port_low
 
     intent = await read_var_int(buffer)
@@ -127,3 +136,14 @@ async def read_message(buffer: SocketBuffer) -> Message:
         data += (await message_buffer.read_byte()).to_bytes(1, 'big')
     
     return Message(length, packet_id, data)
+
+def create_status_message(status_json: str) -> bytes:
+    str_len = ByteWriteBuffer()
+    write_var_int(len(status_json), str_len)
+    str_len = str_len.buffer
+
+    msg_len = ByteWriteBuffer()
+    write_var_int(len(status_json) + len(str_len) + 1, msg_len)
+    msg_len = msg_len.buffer
+
+    return msg_len + b'\x00' + str_len + status_json.encode('utf-8')

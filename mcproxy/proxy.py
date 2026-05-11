@@ -3,8 +3,10 @@ import socket
 import asyncio
 
 import jsonpickle
-from settings import SERVER_HOSTNAME, SERVER_PORT, PROXY_PORT
-import server_manager
+from settings import SERVER_HOSTNAME, SERVER_PORT, PROXY_PORT, MINECRAFT_VERSION, AUTO_SHUTDOWN_TIME, STATUS_UPDATE_INTERVAL, ERROR_STATE_WAIT_TIME
+from server_manager import ServerManager
+import protocol
+from protocol import PROTOCOL_VERSION
 
 # from sys import exit
 # import nbtlib
@@ -22,42 +24,68 @@ import server_manager
 # print(len(raw_msg))
 
 SERVER_STARTING_MESSAGE = b'\x23\x00\x21{"text": "Server is starting..."}'
-# print(error_message)
-# print(len(error_message))
+SERVER_STOPPING_MESSAGE = b'\x39\x00\x37{"text": "Server is stopping. Please try again later."}'
+f'''
+
+'''
+
+SERVER_STARTING_STATUS_MESSAGE = protocol.create_status_message(f'''
+{{
+    "version": {{
+        "name": "{MINECRAFT_VERSION}",
+        "protocol": {PROTOCOL_VERSION}
+    }},
+    "players": {{
+        "max": 0,
+        "online": 0
+    }},
+    "description": {{
+        "text": "Server is currently starting up..."
+    }},
+    "enforcesSecureChat": false
+}}
+''')
+
+SERVER_STOPPING_STATUS_MESSAGE = protocol.create_status_message(f'''
+{{
+    "version": {{
+        "name": "{MINECRAFT_VERSION}",
+        "protocol": {PROTOCOL_VERSION}
+    }},
+    "players": {{
+        "max": 0,
+        "online": 0
+    }},
+    "description": {{
+        "text": "Server is currently shutting down. Please try again later."
+    }},
+    "enforcesSecureChat": false
+}}
+''')
 
 async def server_connection(server: Socket, client: Socket, address):
     print(f"[{address}] - Server connection established.")
     while True:
-        if await server.fileno() == -1:
-            break
+        try:
+            if await server.fileno() == -1:
+                break
 
-        data = await server.recv(8162)
+            data = await server.recv(8162)
 
 
-        if len(data) > 0:
-            if len(data) < 100:
-                print("server - " + str(data))
-
-            await client.sendall(data)
-        else:
-            break
+            if len(data) > 0:
+                await client.sendall(data)
+            else:
+                break
+        except Exception as e:
+            print(e)
     
     print(f"[{address}] - Server connection closed.")
 
-async def client_connection(client: Socket, address):
+async def client_connection(client: Socket, address, server_manager: ServerManager):
     print(f"[{address}] - Connected.")
 
-    # buffer = protocol.SocketBuffer(client)
-    # handshake = await protocol.read_handshake(buffer)
-
-    # print(handshake.__dict__)
-
-    # client.close()
-
-    # return
-
-    server = None
-    if not starting:
+    if server_manager.state == 'Running':
         print(f"[{address}] - Establishing game server connection...")
         server = Socket(socket.AF_INET6, socket.SOCK_STREAM)
         await server.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
@@ -65,32 +93,56 @@ async def client_connection(client: Socket, address):
 
         asyncio.create_task(server_connection(server, client, address))
 
-    while True:
-        data = await client.recv(8162)
+        while True:
+            try:
+                data = await client.recv(8162)
 
-        if len(data) > 0:
-            if len(data) < 100:
-                print("client - " + str(data))
+                if len(data) > 0:
+                    if server is None:
+                        await client.sendall(SERVER_STARTING_MESSAGE)
+                        break
 
-            if server is None:
-                await client.sendall(SERVER_STARTING_MESSAGE)
-                break
-
-            await server.sendall(data)
-        else:
-            break
-    
-    if server is not None:
+                    await server.sendall(data)
+                else:
+                    break
+            except Exception as e:
+                print(e)
+        
         await server.close()
+    elif server_manager.state == 'Shutdown':
+        await server_manager.start_server()
+    elif server_manager.state == 'Stopping':
+        socket_buffer = protocol.SocketBuffer(client)
+        try:
+            handshake = await protocol.read_handshake(socket_buffer)
+        except:
+            handshake = None
+        
+        if handshake.intent == 1: # Status request
+            await protocol.read_message(socket_buffer) # recieve next message from client
+            await client.sendall(SERVER_STOPPING_STATUS_MESSAGE)
+        elif handshake.intent == 2: # Regular Connection
+            await client.sendall(SERVER_STOPPING_MESSAGE)
+
+    if server_manager.state == 'Starting':
+        socket_buffer = protocol.SocketBuffer(client)
+        try:
+            handshake = await protocol.read_handshake(socket_buffer)
+        except:
+            handshake = None
+        
+        if handshake is not None and handshake.intent == 1: # Status request
+            await protocol.read_message(socket_buffer) # recieve next message from client
+            await client.sendall(SERVER_STARTING_STATUS_MESSAGE)
+        elif handshake is not None and handshake.intent == 2: # Regular Connection
+            await client.sendall(SERVER_STARTING_MESSAGE)
 
     print(f"[{address}] - Disconnected.")
 
 async def main():
-    status = await server_manager.server_status(SERVER_HOSTNAME, SERVER_PORT)
+    server_manager = ServerManager(SERVER_HOSTNAME, SERVER_PORT, AUTO_SHUTDOWN_TIME, STATUS_UPDATE_INTERVAL, ERROR_STATE_WAIT_TIME)
+    server_manager.run()
 
-    print(jsonpickle.dumps(status, unpicklable=False))
-
-    return
     print("Starting proxy server...")
     proxy = Socket(socket.AF_INET6, socket.SOCK_STREAM)
     await proxy.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
@@ -105,10 +157,10 @@ async def main():
             (clientsocket, address) = await proxy.accept()
             # now do something with the clientsocket
             # in this case, we'll pretend this is a threaded server
-            asyncio.create_task(client_connection(clientsocket, address[0]))
+            asyncio.create_task(client_connection(clientsocket, address[0], server_manager))
         except OSError as e:
-            if e.winerror == 10038:
+            if e.winerror == 10038 or e.errno == 88: # Error caused by trying to use socket after it is closed
                 break
             
-            raise e
+            print(e)
 

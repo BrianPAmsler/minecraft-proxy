@@ -1,9 +1,11 @@
 [Server]
 hostname = "localhost"
-port = 25567
+port = 25566
+minecraft-version = "1.11.2"
+aws-instance-id = ""
+auto-shutdown-time = 600
+error-state-wait-time = 300
+status-update-interval = 5
 
 [Proxy]
 port = 25565
-
-[AWS]
-instance-id = ""
