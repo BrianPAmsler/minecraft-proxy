@@ -77,6 +77,9 @@ async def server_connection(server: Socket, client: Socket, address):
             else:
                 break
         except Exception as e:
+            if e.errno == 88 or e.errno == 9 or (hasattr(e, 'winerror') and e.winerror == 10038): # Error caused by trying to use socket after it is closed
+                break
+
             print(e)
     
     print(f"[{address}] - Server connection closed.")
@@ -105,6 +108,9 @@ async def client_connection(client: Socket, address, server_manager: ServerManag
                 else:
                     break
             except Exception as e:
+                if e.errno == 88 or e.errno == 9 or (hasattr(e, 'winerror') and e.winerror == 10038): # Error caused by trying to use socket after it is closed
+                    break
+                
                 print(e)
         
         await server.close()

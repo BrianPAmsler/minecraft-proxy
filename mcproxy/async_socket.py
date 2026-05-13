@@ -5,6 +5,7 @@ import functools
 import signal
 import socket
 from typing import Any, Literal, overload
+from sys import exit
 
 type RetAddress = Any
 
@@ -232,8 +233,9 @@ class AsyncSocket:
         return await loop.run_in_executor(None, self.__socket.share, process_id)
     
     def close_all_connections():
-        print("SIGINT")
         for sock in AsyncSocket.__active_connections:
             sock.close()
+        
+        # exit(0)
 
 signal.signal(signal.SIGINT, lambda a, b: AsyncSocket.close_all_connections())
