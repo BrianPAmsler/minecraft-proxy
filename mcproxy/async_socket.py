@@ -234,7 +234,7 @@ class AsyncSocket:
     
     def close_all_connections():
         for sock in AsyncSocket.__active_connections:
-            sock.shutdown(socket.SHUT_RD)
+            # sock.shutdown(socket.SHUT_RD)
             sock.close()
         
         # exit(0)

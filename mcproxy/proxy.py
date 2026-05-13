@@ -91,7 +91,9 @@ async def client_connection(client: Socket, address, server_manager: ServerManag
         print(f"[{address}] - Establishing game server connection...")
         server = Socket(socket.AF_INET6, socket.SOCK_STREAM)
         await server.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        await server.settimeout(1)
         await server.connect((SERVER_HOSTNAME, SERVER_PORT))
+        await server.settimeout(None)
 
         asyncio.create_task(server_connection(server, client, address))
 
@@ -110,7 +112,7 @@ async def client_connection(client: Socket, address, server_manager: ServerManag
             except Exception as e:
                 if e.errno == 88 or e.errno == 9 or (hasattr(e, 'winerror') and e.winerror == 10038): # Error caused by trying to use socket after it is closed
                     break
-                
+
                 print(e)
         
         await server.close()
