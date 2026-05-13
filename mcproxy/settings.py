@@ -42,10 +42,12 @@ with open("settings.toml", 'rb') as file:
         SERVER_HOSTNAME = settings['Server']['hostname']
         SERVER_PORT = settings['Server']['port']
         MINECRAFT_VERSION = settings['Server']['minecraft-version']
-        AWS_INSTANCE_ID = settings['Server']['aws-instance-id']
         AUTO_SHUTDOWN_TIME = settings['Server']['auto-shutdown-time']
         ERROR_STATE_WAIT_TIME = settings['Server']['error-state-wait-time']
         STATUS_UPDATE_INTERVAL = settings['Server']['status-update-interval']
+
+        AWS_INSTANCE_ID = settings['Server']['aws-instance-id']
+        AWS_REGION = settings['Server']['aws-region']
 
         PROXY_PORT = settings['Proxy']['port']
 

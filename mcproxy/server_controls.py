@@ -9,7 +9,7 @@ __ec2 = None
 try:
     __ec2 = boto3.client('ec2', region_name=AWS_REGION)
 except Exception as e:
-    print('boto3 error' + str(e))
+    print('boto3 error: ' + str(e))
 
 __test_server_process = None
 
