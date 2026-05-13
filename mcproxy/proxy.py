@@ -158,7 +158,7 @@ async def main():
             # in this case, we'll pretend this is a threaded server
             asyncio.create_task(client_connection(clientsocket, address[0], server_manager))
         except OSError as e:
-            if e.errno == 88 or (hasattr(e, 'winerror') and e.winerror == 10038): # Error caused by trying to use socket after it is closed
+            if e.errno == 88 or e.errno == 9 or (hasattr(e, 'winerror') and e.winerror == 10038): # Error caused by trying to use socket after it is closed
                 break
             
             print(e)
