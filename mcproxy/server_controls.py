@@ -13,6 +13,47 @@ except Exception as e:
 
 __test_server_process = None
 
+async def shutdown_server():
+    if __ec2 is None:
+        return await __test_shutdown()
+    
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, lambda: __ec2.stop_instances(InstanceIds=[AWS_INSTANCE_ID]))
+
+async def start_server():
+    if __ec2 is None:
+        return await __test_start()
+    
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, lambda: __ec2.start_instances(InstanceIds=[AWS_INSTANCE_ID]))
+
+async def get_status() -> Literal["Online", "Offline"]:
+    if __ec2 is None:
+        return await __test_status()
+    
+    loop = asyncio.get_running_loop()
+    response = await loop.run_in_executor(None, lambda: __ec2.describe_instance_status(InstanceIds=[AWS_INSTANCE_ID]))
+    print(response)
+
+    status = response['InstanceStatuses'][0]['InstanceState']['Name']
+
+    # For the purposes of this program, any state that isn't fully stopped is considered 'Online'
+    if status == 'pending' or status == 'stopped' or status == 'terminated':
+        return 'Offline'
+    else:
+        return 'Online'
+
+async def reboot():
+    if __ec2 is None:
+        return await __test_reboot()
+    
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, lambda: __ec2.reboot_instances(InstanceIds=[AWS_INSTANCE_ID]))
+
+# --------------------------------------------------------------------------------------------------------------------
+#                                               Test Functions
+# --------------------------------------------------------------------------------------------------------------------
+
 async def __test_shutdown():
     global __test_server_process
 
@@ -24,14 +65,7 @@ async def __test_shutdown():
     __test_server_process.stdin.write('stop\n')
     __test_server_process.stdin.flush()
 
-async def shutdown_server():
-    if __ec2 is None:
-        return await __test_shutdown()
     
-    loop = asyncio.get_running_loop()
-    await loop.run_in_executor(None, lambda: __ec2.stop_instances(InstanceIds=[AWS_INSTANCE_ID]))
-
-
 async def __test_start():
     global __test_server_process
 
@@ -51,13 +85,6 @@ async def __test_start():
         creationflags=subprocess.CREATE_NEW_CONSOLE
     )
 
-async def start_server():
-    if __ec2 is None:
-        return await __test_start()
-    
-    loop = asyncio.get_running_loop()
-    await loop.run_in_executor(None, lambda: __ec2.start_instances(InstanceIds=[AWS_INSTANCE_ID]))
-
 async def __test_status():
     global __test_server_process
 
@@ -74,21 +101,6 @@ async def __test_status():
 
     return status
 
-async def get_status() -> Literal["Online", "Offline"]:
-    if __ec2 is None:
-        return await __test_status()
-    
-    loop = asyncio.get_running_loop()
-    response = await loop.run_in_executor(None, lambda: __ec2.describe_instance_status(InstanceIds=[AWS_INSTANCE_ID]))
-
-    status = response['InstanceStatuses'][0]['InstanceState']['Name']
-
-    # For the purposes of this program, any state that isn't fully stopped is considered 'Online'
-    if status == 'pending' or status == 'stopped' or status == 'terminated':
-        return 'Offline'
-    else:
-        return 'Online'
-
 async def __test_reboot():
     global __test_server_process
 
@@ -103,10 +115,3 @@ async def __test_reboot():
     __test_server_process = None
 
     __test_start()
-
-async def reboot():
-    if __ec2 is None:
-        return await __test_reboot()
-    
-    loop = asyncio.get_running_loop()
-    await loop.run_in_executor(None, lambda: __ec2.reboot_instances(InstanceIds=[AWS_INSTANCE_ID]))
