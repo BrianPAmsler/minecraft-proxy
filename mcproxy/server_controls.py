@@ -8,8 +8,8 @@ from settings import AWS_INSTANCE_ID, TEST_SERVER_START_COMMAND, TEST_SERVER_DIR
 __ec2 = None
 try:
     __ec2 = boto3.client('ec2')
-except:
-    pass
+except Exception as e:
+    print(e)
 
 __test_server_process = None
 
