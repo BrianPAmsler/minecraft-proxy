@@ -2,7 +2,6 @@ from async_socket import AsyncSocket as Socket
 import socket
 import asyncio
 
-import jsonpickle
 from settings import SERVER_HOSTNAME, SERVER_PORT, PROXY_PORT, MINECRAFT_VERSION, AUTO_SHUTDOWN_TIME, STATUS_UPDATE_INTERVAL, ERROR_STATE_WAIT_TIME
 from server_manager import ServerManager
 import protocol

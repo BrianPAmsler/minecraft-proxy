@@ -1,4 +1,3 @@
-import asyncio
 from async_socket import AsyncSocket as Socket
 
 SEGMENT_BITS = 0x7F

@@ -1,6 +1,5 @@
 import asyncio
 from datetime import datetime
-import io
 from typing import Literal
 import server_controls
 import protocol

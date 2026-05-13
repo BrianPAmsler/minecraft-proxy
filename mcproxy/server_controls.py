@@ -1,7 +1,6 @@
 import asyncio
 import subprocess
 from typing import Literal
-from pathlib import Path
 import boto3
 
 from settings import AWS_INSTANCE_ID, TEST_SERVER_START_COMMAND, TEST_SERVER_DIRECTORY
