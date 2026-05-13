@@ -3,11 +3,11 @@ import subprocess
 from typing import Literal
 import boto3
 
-from settings import AWS_INSTANCE_ID, TEST_SERVER_START_COMMAND, TEST_SERVER_DIRECTORY
+from settings import AWS_INSTANCE_ID, TEST_SERVER_START_COMMAND, TEST_SERVER_DIRECTORY, AWS_REGION
 
 __ec2 = None
 try:
-    __ec2 = boto3.client('ec2')
+    __ec2 = boto3.client('ec2', region_name=AWS_REGION)
 except Exception as e:
     print(e)
 
