@@ -1,11 +1,33 @@
 from contextlib import suppress
 import tomllib
 
+DEFAULT = '''
+[Server]
+hostname = "localhost"
+port = 25566
+minecraft-version = "1.11.2"
+aws-instance-id = ""
+aws-region = "us-west-1"
+auto-shutdown-time = 600
+error-state-wait-time = 300
+status-update-interval = 5
+
+[Proxy]
+port = 25565
+'''
+
+try:
+    with open('settings.toml', 'x') as f:
+        f.write(DEFAULT)
+except FileExistsError:
+    pass
+
 SERVER_HOSTNAME = 'localhost'
 SERVER_PORT = 25566
 PROXY_PORT = 25565
 MINECRAFT_VERSION = "1.11.2"
 AWS_INSTANCE_ID = ""
+AWS_REGION = ""
 AUTO_SHUTDOWN_TIME = 600
 ERROR_STATE_WAIT_TIME = 300
 STATUS_UPDATE_INTERVAL = 30
