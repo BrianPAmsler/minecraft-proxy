@@ -236,6 +236,6 @@ class AsyncSocket:
         for sock in AsyncSocket.__active_connections:
             sock.close()
         
-        # exit(0)
+        exit(0)
 
 signal.signal(signal.SIGINT, lambda a, b: AsyncSocket.close_all_connections())
