@@ -234,8 +234,14 @@ class AsyncSocket:
     
     def close_all_connections():
         for sock in AsyncSocket.__active_connections:
-            # sock.shutdown(socket.SHUT_RD)
-            sock.close()
+            try:
+                # Attempt to shut down both sending and receiving
+                sock.shutdown(socket.SHUT_RDWR)
+            except OSError as e:
+                pass
+            finally:
+                # Always close the socket to release resources
+                sock.close()
         
         # exit(0)
 
