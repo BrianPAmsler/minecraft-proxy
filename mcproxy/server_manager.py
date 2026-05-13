@@ -51,8 +51,8 @@ def trim_response(response: str) -> str:
 
 async def server_status(address: str, port: int) -> ServerStatus:
     try :
-        server = Socket(socket.AF_INET6, socket.SOCK_STREAM)
-        await server.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        server = Socket(socket.AF_INET, socket.SOCK_STREAM)
+        
         await server.connect((address, port))
 
         buffer = protocol.SocketBuffer(server)
@@ -167,7 +167,7 @@ class ServerManager:
             except Exception as e:
                 if e.errno == 88 or e.errno == 9 or (hasattr(e, 'winerror') and e.winerror == 10038): # Error caused by trying to use socket after it is closed
                     break
-                
+
                 print(e)
     
     def run(self):

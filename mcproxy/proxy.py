@@ -89,8 +89,7 @@ async def client_connection(client: Socket, address, server_manager: ServerManag
 
     if server_manager.state == 'Running':
         print(f"[{address}] - Establishing game server connection...")
-        server = Socket(socket.AF_INET6, socket.SOCK_STREAM)
-        await server.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        server = Socket(socket.AF_INET, socket.SOCK_STREAM)
         await server.settimeout(1)
         await server.connect((SERVER_HOSTNAME, SERVER_PORT))
         await server.settimeout(None)
@@ -151,8 +150,7 @@ async def main():
     server_manager.run()
 
     print("Starting proxy server...")
-    proxy = Socket(socket.AF_INET6, socket.SOCK_STREAM)
-    await proxy.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+    proxy = Socket(socket.AF_INET, socket.SOCK_STREAM)
     await proxy.bind(('::', PROXY_PORT))
     await proxy.listen()
     
