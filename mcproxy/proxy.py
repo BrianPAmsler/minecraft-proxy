@@ -151,7 +151,7 @@ async def main():
 
     print("Starting proxy server...")
     proxy = Socket(socket.AF_INET, socket.SOCK_STREAM)
-    await proxy.bind(('::', PROXY_PORT))
+    await proxy.bind(('0.0.0.0', PROXY_PORT))
     await proxy.listen()
     
     print(f"Listening on port {PROXY_PORT} and forwarding to {SERVER_HOSTNAME}:{SERVER_PORT}.")
