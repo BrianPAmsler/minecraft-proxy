@@ -232,6 +232,7 @@ class AsyncSocket:
         return await loop.run_in_executor(None, self.__socket.share, process_id)
     
     def close_all_connections():
+        print("SIGINT")
         for sock in AsyncSocket.__active_connections:
             sock.close()
 
